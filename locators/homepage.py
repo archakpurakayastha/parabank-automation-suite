@@ -4,3 +4,4 @@ class HomePageLocators:
     PASSWORD_FIELD   = 'input[name="password"]'
     LOGIN_BUTTON     = 'input[value="Log In"]'
     REGISTER_LINK    = 'a[href*="register"]'
+    LOGIN_ERROR      = '.error'

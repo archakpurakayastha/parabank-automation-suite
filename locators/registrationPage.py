@@ -32,18 +32,6 @@ class RegistrationPageLocators:
         "phone": 'span[id="customer.phoneNumber.errors"]',
         "ssn": 'span[id="customer.ssn.errors"]',
         "username": 'span[id="customer.username.errors"]',
-    }
-
-    # Field input IDs (used to fill a specific field dynamically)
-    FIELD_INPUT_MAP = {
-        "firstName": 'input[id="customer.firstName"]',
-        "lastName": 'input[id="customer.lastName"]',
-        "address": 'input[id="customer.address.street"]',
-        "city": 'input[id="customer.address.city"]',
-        "state": 'input[id="customer.address.state"]',
-        "zipCode": 'input[id="customer.address.zipCode"]',
-        "phone": 'input[id="customer.phoneNumber"]',
-        "ssn": 'input[id="customer.ssn"]',
-        "username": 'input[id="customer.username"]',
-        "password": 'input[id="customer.password"]',
+        "password": 'span[id="customer.password.errors"]',
+        "repeatpassword": 'span[id="repeatedPassword.errors"]',
     }

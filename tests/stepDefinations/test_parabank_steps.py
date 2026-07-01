@@ -1,3 +1,5 @@
+import time
+
 import pytest
 from pytest_bdd import given, when, then, scenarios, parsers
 from playwright.sync_api import Page
@@ -31,6 +33,37 @@ def fill_registration_form(page: Page, user_data: dict):
     page.fill(RegistrationPageLocators.PASSWORD,         user_data.get("password", ""))
     page.fill(RegistrationPageLocators.CONFIRM_PASSWORD, user_data.get("confirm_password", ""))
 
+def print_account_balances(page: Page):
+    """
+    Reads the account balance table from the Account Overview page
+    and prints a formatted summary to the console.
+    This satisfies the requirement: 'log/print the amount post-login'.
+    """
+    print("\n")
+    print("=" * 55)
+    print("   POST-LOGIN ACCOUNT BALANCE SUMMARY")
+    print("=" * 55)
+
+    rows = page.locator(AccountOverviewLocators.ACCOUNT_ROWS)
+    row_count = rows.count()
+
+    if row_count == 0:
+        print("   No account data found in the balance table.")
+    else:
+        for i in range(row_count):
+            row = rows.nth(i)
+            cells = row.locator("td")
+            if cells.count() >= 2:
+                account_id       = cells.nth(0).inner_text().strip()
+                balance          = cells.nth(1).inner_text().strip()
+                available_balance = cells.nth(2).inner_text().strip() if cells.count() > 2 else balance
+                print(f"   Account ID        : {account_id}")
+                print(f"   Balance           : {balance}")
+                print(f"   Available Balance : {available_balance}")
+                print("-" * 55)
+
+    print("=" * 55)
+    print("\n")
 
 
 
@@ -70,45 +103,65 @@ def fill_valid_registration_form(page: Page):
     print(f"\n[INFO] Attempting registration with username: {user_data['username']}")
 
 @when("I submit the registration form")
-def submit_registration_form(page: Page, ctx: dict):
+def submit_registration_form(page: Page):
     """Click the Register button to submit the form."""
     page.click(RegistrationPageLocators.REGISTER_BUTTON)
     page.wait_for_load_state("domcontentloaded")
 
 @when("I fill the registration form with an already registered username")
-def fill_duplicate_username_form(page: Page, ctx: dict):
+def fill_duplicate_username_form(page: Page):
     """Fill the form using a username that is already taken — TC_02."""
     user_data = get_duplicate_username_data()
-    ctx["user_data"] = user_data
     fill_registration_form(page, user_data)
 
 @when("I submit the registration form without filling any fields")
-def submit_empty_registration_form(page: Page, ctx: dict):
+def submit_empty_registration_form(page: Page):
     """Submit the form with all fields empty — TC_03."""
     page.click(RegistrationPageLocators.REGISTER_BUTTON)
     page.wait_for_load_state("domcontentloaded")
 
 @when("I fill the registration form with mismatched passwords")
-def fill_mismatched_password_form(page: Page, ctx: dict):
+def fill_mismatched_password_form(page: Page):
     """Fill the form with two different passwords — TC_04."""
     user_data = get_mismatched_password_data()
-    ctx["user_data"] = user_data
     fill_registration_form(page, user_data)
 
 @when("I fill the registration form with spaces as username")
-def fill_spaces_username_form(page: Page, ctx: dict):
+def fill_spaces_username_form(page: Page):
     """Fill the form where username is only whitespace characters — TC_05."""
     user_data = get_spaces_username_data()
-    ctx["user_data"] = user_data
     fill_registration_form(page, user_data)
 
+@when(parsers.parse('I enter username "{username}" and password "{password}"'))
+def enter_login_credentials(page: Page, username: str, password: str):
+    """Type a specific username and password into the login form."""
+    page.fill(HomePageLocators.USERNAME_FIELD, username)
+    page.fill(HomePageLocators.PASSWORD_FIELD, password)
+
+@when("I click the Log In button")
+def click_login_button(page: Page):
+    """Click the Log In button and wait for the page to respond."""
+    page.click(HomePageLocators.LOGIN_BUTTON)
+    page.wait_for_load_state("domcontentloaded")
+
+@when("I leave the login fields empty")
+def leave_login_fields_empty(page: Page):
+    """Leave both login fields blank — TC_09."""
+    # Fields are already empty on page load; nothing to do here
+    pass
+
+
+@when(parsers.parse('I leave the username empty and enter password "{password}"'))
+def leave_username_empty_enter_password(page: Page, password: str):
+    """Leave username blank but type a password — TC_11."""
+    page.fill(HomePageLocators.PASSWORD_FIELD, password)
 
 # ==============================================================
 # THEN STEPS — Verifying outcomes / assertions
 # ==============================================================
 
 @then("I should see the welcome message with username")
-def verify_welcome_message(page: Page, ctx: dict):
+def verify_welcome_message(page: Page):
     """
     After successful registration, ParaBank shows a welcome heading.
     Verify the heading contains 'Welcome' confirming registration success.
@@ -148,7 +201,7 @@ def verify_error_message(page: Page, expected_error: str):
     print(f"\n[PASS] Correct error shown: '{error_text}'")
 
 @then("I should see inline validation errors for all required fields")
-def verify_all_field_errors(page: Page, ctx: dict):
+def verify_all_field_errors(page: Page):
     """
     TC_03 - Verify that submitting an empty form shows errors for every field.
     ParaBank shows individual error spans below each required field.
@@ -186,7 +239,7 @@ def verify_all_field_errors(page: Page, ctx: dict):
         
 
 @then("I should see a username validation error")
-def verify_username_error(page: Page, ctx: dict):
+def verify_username_error(page: Page):
     """TC_05 - Verify an error is shown for spaces-only username."""
     error_locator = page.locator(RegistrationPageLocators.USERNAME_ERROR)
     all_errors    = page.locator(RegistrationPageLocators.ALL_ERRORS)
@@ -201,3 +254,50 @@ def verify_username_error(page: Page, ctx: dict):
         "Expected a username validation error for spaces-only input but got none."
 
     print(f"\n[PASS] Username error shown: '{error_text}'")
+
+
+@then("I should be redirected to the Account Overview page")
+def verify_account_overview_page(page: Page):
+    """Verify successful login redirects to the Account Overview page."""
+    assert page.locator(AccountOverviewLocators.LOGOUT_LINK).is_visible() or \
+           page.locator(AccountOverviewLocators.ACCOUNT_SERVICE_SECTION).is_visible(), \
+        "Expected Account Overview page after login but it was not found."
+
+@then("the Account Service section should be visible")
+def verify_account_service_section(page: Page):
+    """Confirm the left-panel Account Service section is visible post-login."""
+    assert page.locator(AccountOverviewLocators.ACCOUNT_SERVICE_SECTION).is_visible(), \
+        "Account Service section is not visible on the page."
+
+@then("I should see the account balance table with Account ID and Balance")
+def verify_balance_table_visible(page: Page):
+    """Verify the account balance table exists and has at least one row."""
+    # Wait until the table appears on the page (max 10 seconds)
+
+    table = page.locator(AccountOverviewLocators.ACCOUNT_TABLE)
+
+    assert table.is_visible(), \
+        "Account balance table is not visible on the Account Overview page."
+
+    # Wait until at least one row appears inside the table
+    page.wait_for_selector(
+        AccountOverviewLocators.ACCOUNT_ROWS,
+        timeout=10000
+    )
+
+    row_count = page.locator(AccountOverviewLocators.ACCOUNT_ROWS).count()
+    assert row_count > 0, \
+        "Account balance table is visible but has no rows."
+
+    print(f"\n[PASS] Account balance table visible with {row_count} account(s).")
+
+
+
+@then("I should print the account balance details to console")
+def print_balance_to_console(page: Page):
+    """
+    Read and print all account balances from the overview table.
+    This directly satisfies the assignment requirement:
+    'log/print the amount displayed on the page post-login'.
+    """
+    print_account_balances(page)

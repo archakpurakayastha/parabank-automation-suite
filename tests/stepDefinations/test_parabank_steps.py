@@ -158,22 +158,19 @@ def leave_username_empty_enter_password(page: Page, password: str):
 
 
 @when(parsers.parse('I fill the registration form with special characters "{special_chars}" in the "{field_name}" field'))
-def fill_special_chars_in_one_field(page: Page, ctx: dict, special_chars: str, field_name: str):
+def fill_special_chars_in_one_field(page: Page, special_chars: str, field_name: str):
     """
     Fill one specific field with special characters, rest with valid data.
     Used in TC_14 to TC_22 — each scenario targets a different field.
     """
     user_data = get_special_char_registration_data(field_name, special_chars)
-    ctx["user_data"] = user_data
-    ctx["tested_field"] = field_name
     fill_registration_form(page, user_data)
     print(f"\n[INFO] Testing field '{field_name}' with value: {special_chars}")
 
 @when(parsers.parse('I fill all registration fields with special characters "{special_chars}"'))
-def fill_all_fields_with_special_chars(page: Page, ctx: dict, special_chars: str):
+def fill_all_fields_with_special_chars(page: Page, special_chars: str):
     """Fill every single registration field with special characters — TC_23."""
     user_data = get_all_special_char_data(special_chars)
-    ctx["user_data"] = user_data
     fill_registration_form(page, user_data)
     print(f"\n[INFO] All fields filled with special characters: {special_chars}")
 
@@ -324,7 +321,7 @@ def print_balance_to_console(page: Page):
     print_account_balances(page)
 
 @then(parsers.parse('the system should reject the input and show a validation error for "{field_name}"'))
-def verify_special_char_rejected_for_field(page: Page, ctx: dict, field_name: str):
+def verify_special_char_rejected_for_field(page: Page, field_name: str):
     """
     TC_14 to TC_22 - Verify that special character input in a specific field
     is rejected with a validation error.
@@ -360,7 +357,7 @@ def verify_special_char_rejected_for_field(page: Page, ctx: dict, field_name: st
 
 
 @then("the system should reject the entire form with validation errors for all fields")
-def verify_all_special_char_form_rejected(page: Page, ctx: dict):
+def verify_all_special_char_form_rejected(page: Page):
     """
     TC_23 - Verify that submitting all fields with special characters is rejected.
 

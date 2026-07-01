@@ -6,7 +6,7 @@ from playwright.sync_api import Page
 from locators.homepage import HomePageLocators
 from locators.registrationPage import RegistrationPageLocators
 from locators.accountOverviewPage import AccountOverviewLocators
-from utils.test_data import get_valid_registration_data, get_duplicate_username_data, get_mismatched_password_data, get_spaces_username_data
+from utils.test_data import get_valid_registration_data, get_duplicate_username_data, get_mismatched_password_data, get_spaces_username_data, get_special_char_registration_data, get_all_special_char_data
 
 
 scenarios("../features/parabank_signup_login.feature")
@@ -156,6 +156,27 @@ def leave_username_empty_enter_password(page: Page, password: str):
     """Leave username blank but type a password — TC_11."""
     page.fill(HomePageLocators.PASSWORD_FIELD, password)
 
+
+@when(parsers.parse('I fill the registration form with special characters "{special_chars}" in the "{field_name}" field'))
+def fill_special_chars_in_one_field(page: Page, ctx: dict, special_chars: str, field_name: str):
+    """
+    Fill one specific field with special characters, rest with valid data.
+    Used in TC_14 to TC_22 — each scenario targets a different field.
+    """
+    user_data = get_special_char_registration_data(field_name, special_chars)
+    ctx["user_data"] = user_data
+    ctx["tested_field"] = field_name
+    fill_registration_form(page, user_data)
+    print(f"\n[INFO] Testing field '{field_name}' with value: {special_chars}")
+
+@when(parsers.parse('I fill all registration fields with special characters "{special_chars}"'))
+def fill_all_fields_with_special_chars(page: Page, ctx: dict, special_chars: str):
+    """Fill every single registration field with special characters — TC_23."""
+    user_data = get_all_special_char_data(special_chars)
+    ctx["user_data"] = user_data
+    fill_registration_form(page, user_data)
+    print(f"\n[INFO] All fields filled with special characters: {special_chars}")
+
 # ==============================================================
 # THEN STEPS — Verifying outcomes / assertions
 # ==============================================================
@@ -301,3 +322,66 @@ def print_balance_to_console(page: Page):
     'log/print the amount displayed on the page post-login'.
     """
     print_account_balances(page)
+
+@then(parsers.parse('the system should reject the input and show a validation error for "{field_name}"'))
+def verify_special_char_rejected_for_field(page: Page, ctx: dict, field_name: str):
+    """
+    TC_14 to TC_22 - Verify that special character input in a specific field
+    is rejected with a validation error.
+
+    BUG NOTE: ParaBank currently DOES NOT reject special characters.
+    It accepts them and creates the account. These tests are expected to FAIL,
+    which highlights the validation defect in the application.
+    """
+    # Check if we were redirected to a success page (bug - should NOT happen)
+    heading = page.locator(RegistrationPageLocators.SUCCESS_HEADING)
+    heading_text = heading.inner_text().strip() if heading.count() > 0 else ""
+
+    if "Welcome" in heading_text:
+        # Application accepted special chars — this is the BUG we are reporting
+        pytest.fail(
+            f"[BUG FOUND] Field '{field_name}' accepted special character input. "
+            f"Account was created successfully instead of showing a validation error. "
+            f"ParaBank should reject special-character-only values in '{field_name}'."
+        )
+
+    # If not redirected to success, check for a validation error message
+    error_selector = RegistrationPageLocators.FIELD_ERROR_MAP.get(field_name,
+                     RegistrationPageLocators.ALL_ERRORS)
+    error_locator  = page.locator(error_selector)
+    error_text     = error_locator.inner_text().strip() if error_locator.count() > 0 else ""
+
+    assert error_text != "", \
+        f"Expected a validation error for field '{field_name}' with special char input. " \
+        f"Neither an error nor a redirect occurred."
+
+    print(f"\n[PASS] Field '{field_name}' correctly rejected special chars. Error: '{error_text}'")
+
+
+
+@then("the system should reject the entire form with validation errors for all fields")
+def verify_all_special_char_form_rejected(page: Page, ctx: dict):
+    """
+    TC_23 - Verify that submitting all fields with special characters is rejected.
+
+    BUG NOTE: Same as above — ParaBank currently accepts this. Test will FAIL
+    to document the defect.
+    """
+    heading = page.locator(RegistrationPageLocators.SUCCESS_HEADING)
+    heading_text = heading.inner_text().strip() if heading.count() > 0 else ""
+
+    if "Welcome" in heading_text:
+        pytest.fail(
+            "[BUG FOUND] All fields filled with special characters were accepted. "
+            "Account was created successfully. "
+            "The system should reject a form where every field contains only special characters."
+        )
+
+    # If correctly rejected, count how many errors appear
+    all_errors = page.locator(RegistrationPageLocators.ALL_ERRORS)
+    error_count = all_errors.count()
+
+    assert error_count > 0, \
+        "Form was not submitted but no validation errors were shown either."
+
+    print(f"\n[PASS] Entire form with special chars rejected. {error_count} error(s) displayed.")

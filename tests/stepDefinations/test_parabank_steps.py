@@ -6,7 +6,7 @@ from playwright.sync_api import Page
 from locators.homepage import HomePageLocators
 from locators.registrationPage import RegistrationPageLocators
 from locators.accountOverviewPage import AccountOverviewLocators
-from utils.test_data import get_valid_registration_data, get_duplicate_username_data, get_mismatched_password_data, get_spaces_username_data, get_special_char_registration_data, get_all_special_char_data
+from utils.test_data import get_valid_registration_data, get_duplicate_username_data, get_mismatched_password_data, get_spaces_username_data, get_special_char_registration_data, get_all_special_char_data, get_existing_user_credentials
 
 
 scenarios("../features/parabank_signup_login.feature")
@@ -96,15 +96,19 @@ def click_register_link(page: Page):
     assert page.locator(RegistrationPageLocators.FIRST_NAME).is_visible(), "Registration page did not load after clicking Register."
 
 @when("I fill the registration form with valid user details")
-def fill_valid_registration_form(page: Page):
+def fill_valid_registration_form(page: Page, ctx: dict):
     """Fill all registration fields with valid data from test_data.py."""
     user_data = get_valid_registration_data()
+    ctx["user_data"] = user_data
     fill_registration_form(page, user_data)
     print(f"\n[INFO] Attempting registration with username: {user_data['username']}")
 
 @when("I submit the registration form")
 def submit_registration_form(page: Page):
     """Click the Register button to submit the form."""
+
+    # Wait for all fields to populate before submitting
+    page.wait_for_timeout(2000)  # 2 seconds
     page.click(RegistrationPageLocators.REGISTER_BUTTON)
     page.wait_for_load_state("domcontentloaded")
 
@@ -173,6 +177,29 @@ def fill_all_fields_with_special_chars(page: Page, special_chars: str):
     user_data = get_all_special_char_data(special_chars)
     fill_registration_form(page, user_data)
     print(f"\n[INFO] All fields filled with special characters: {special_chars}")
+
+@when("I click on Account Overview from the Account Service section")
+def click_account_overview_link(page: Page):
+    """Click Account Overview link in the left Account Service panel."""
+    page.click(AccountOverviewLocators.ACCOUNT_OVERVIEW_LINK)
+    page.wait_for_load_state("domcontentloaded")
+
+@when("I click the Log Out link")
+def click_logout_link(page: Page):
+    """Click Log Out to end the current session — TC_13."""
+    page.click(AccountOverviewLocators.LOGOUT_LINK)
+    page.wait_for_load_state("domcontentloaded")
+
+@when("I enter the registered username and password")
+def enter_registered_credentials(page: Page, ctx: dict):
+    """
+    Re-enter the credentials used during registration.
+    Pulls the username from context saved during the registration step.
+    """
+    user_data = ctx.get("user_data") or get_existing_user_credentials()
+    page.fill(HomePageLocators.USERNAME_FIELD, user_data["username"])
+    page.fill(HomePageLocators.PASSWORD_FIELD, user_data.get("password", user_data.get("confirm_password", "")))
+
 
 # ==============================================================
 # THEN STEPS — Verifying outcomes / assertions
@@ -257,8 +284,13 @@ def verify_all_field_errors(page: Page):
         
 
 @then("I should see a username validation error")
-def verify_username_error(page: Page):
-    """TC_05 - Verify an error is shown for spaces-only username."""
+def verify_username_error(page: Page, ctx: dict):
+    """
+    TC_05 - Verify an error is shown for spaces-only username.
+    The error should be about invalid/blank username.
+    It should NOT be 'username already exists' — that would mean
+    the server accepted the spaces and tried to register, which is itself a bug.
+    """
     error_locator = page.locator(RegistrationPageLocators.USERNAME_ERROR)
     all_errors    = page.locator(RegistrationPageLocators.ALL_ERRORS)
 
@@ -268,10 +300,16 @@ def verify_username_error(page: Page):
     elif all_errors.count() > 0:
         error_text = all_errors.first.inner_text().strip()
 
+    # Fail if no error at all
     assert error_text != "", \
         "Expected a username validation error for spaces-only input but got none."
 
-    print(f"\n[PASS] Username error shown: '{error_text}'")
+    # Fail if the wrong error is shown — spaces should not reach the duplicate check
+    assert "already" not in error_text.lower(), \
+        f"[BUG] Server accepted spaces as a username and hit duplicate check. " \
+        f"Expected a blank/invalid username error. Got: '{error_text}'"
+
+    print(f"\n[PASS] Correct username validation error shown: '{error_text}'")
 
 
 @then("I should be redirected to the Account Overview page")
@@ -366,7 +404,6 @@ def verify_all_special_char_form_rejected(page: Page):
     """
     heading = page.locator(RegistrationPageLocators.SUCCESS_HEADING)
     heading_text = heading.inner_text().strip() if heading.count() > 0 else ""
-
     if "Welcome" in heading_text:
         pytest.fail(
             "[BUG FOUND] All fields filled with special characters were accepted. "

@@ -1,0 +1,4 @@
+
+[INFO] Testing field 'ssn' with value: @#$-%%^&
+
+[SCREENSHOT] Saved to: Screenshots/FAILED_test_tc_21__registration_with_special_characters_in_ssn_20260702_031232.png

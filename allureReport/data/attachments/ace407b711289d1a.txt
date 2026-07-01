@@ -1,0 +1,4 @@
+
+[INFO] Testing field 'username' with value: @#$%^&*()
+
+[PASS] Field 'username' correctly rejected special chars. Error: 'This username already exists.'

@@ -1,0 +1,2 @@
+
+[PASS] Correct error shown: 'The username and password could not be verified.'

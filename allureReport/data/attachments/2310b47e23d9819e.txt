@@ -1,0 +1,4 @@
+
+[INFO] All fields filled with special characters: @#$
+
+[PASS] Entire form with special chars rejected. 1 error(s) displayed.

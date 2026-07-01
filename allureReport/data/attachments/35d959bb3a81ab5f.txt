@@ -1,0 +1,4 @@
+
+[INFO] Testing field 'zipCode' with value: @#$%^
+
+[SCREENSHOT] Saved to: Screenshots/FAILED_test_tc_19__registration_with_special_characters_in_zip_code_20260702_031216.png

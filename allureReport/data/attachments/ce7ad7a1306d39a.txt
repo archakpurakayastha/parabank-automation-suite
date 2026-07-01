@@ -1,0 +1,12 @@
+
+[PASS] 10 validation error(s) found:
+       - First name is required.
+       - Last name is required.
+       - Address is required.
+       - City is required.
+       - State is required.
+       - Zip Code is required.
+       - Social Security Number is required.
+       - Username is required.
+       - Password is required.
+       - Password confirmation is required.

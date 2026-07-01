@@ -1,0 +1,6 @@
+
+[INFO] Attempting registration with username: abyss.creed.42082
+
+[PASS] Registration successful — Heading: 'Welcome abyss.creed.42082'
+
+[PASS] Account balance table visible with 2 account(s).

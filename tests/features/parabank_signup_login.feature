@@ -87,15 +87,13 @@ Feature: ParaBank Sign Up and Login Flow
     When I leave the username empty and enter password "SecurePass@123"
     And I click the Log In button
     Then I should see the error "Please enter a username and password."
-    
-    
+
   # ----------------------------------------------------------
   # END-TO-END SCENARIOS
   # ----------------------------------------------------------
 
   @end_to_end @TC_12
   Scenario: TC_12 - Complete register then navigate to Account Overview and check balance
-    Given I am on the ParaBank home page
     When I click on the Register link
     And I fill the registration form with valid user details
     And I submit the registration form
@@ -106,7 +104,6 @@ Feature: ParaBank Sign Up and Login Flow
 
   @end_to_end @TC_13
   Scenario: TC_13 - Register then logout then login again and verify balance
-    Given I am on the ParaBank home page
     When I click on the Register link
     And I fill the registration form with valid user details
     And I submit the registration form

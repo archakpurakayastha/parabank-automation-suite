@@ -1,0 +1,4 @@
+
+[INFO] Testing field 'lastName' with value: !@#$%^&*()
+
+[SCREENSHOT] Saved to: Screenshots/FAILED_test_tc_15__registration_with_special_characters_in_last_name_20260702_031145.png

@@ -19,6 +19,7 @@ def browser_instance():
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(
             headless=False,                          # set False to watch tests run
+            slow_mo=200, # ← adds 200ms delay between every action
             args=["--no-sandbox", "--disable-dev-shm-usage"]
         )
         yield browser

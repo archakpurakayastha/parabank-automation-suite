@@ -1,0 +1,2 @@
+
+[PASS] Correct error shown: 'This username already exists.'

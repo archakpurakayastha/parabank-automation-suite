@@ -1,0 +1,4 @@
+
+[INFO] Testing field 'city' with value: ###$$$@@@
+
+[SCREENSHOT] Saved to: Screenshots/FAILED_test_tc_17__registration_with_special_characters_in_city_20260702_031201.png

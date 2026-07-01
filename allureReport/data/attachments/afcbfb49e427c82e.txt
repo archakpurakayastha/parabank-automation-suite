@@ -1,0 +1,4 @@
+
+[INFO] Attempting registration with username: abyss.creed.42017
+
+[PASS] Registration successful — Heading: 'Welcome abyss.creed.42017'

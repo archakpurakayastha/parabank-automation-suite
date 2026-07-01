@@ -1,0 +1,2 @@
+
+[PASS] Correct error shown: 'Please enter a username and password.'
